@@ -3,7 +3,6 @@ package main
 import (
     "fmt"
     "net/http"
-    "testing"
 )
 
 type Simple struct {
