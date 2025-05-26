@@ -39,7 +39,10 @@ pipeline {
 
         stage('Deploy Binary') {
             steps {
-                sh 'scp -i $SSH_KEY main $DEPLOY_USER@$DEPLOY_HOST:/home/laborant/main'
+                // Upload to a temporary name to avoid overwrite issues
+                sh 'scp -i $SSH_KEY main $DEPLOY_USER@$DEPLOY_HOST:/home/laborant/main.tmp'
+                // Rename on the remote host
+                sh 'ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST "mv /home/laborant/main.tmp /home/laborant/main"'
             }
         }
 
