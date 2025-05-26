@@ -5,6 +5,12 @@ pipeline {
         go "1.24.1"
     }
 
+    environment {
+        DEPLOY_USER = 'laborant'
+        DEPLOY_HOST = '172.16.0.3'
+        SSH_KEY = '/var/lib/jenkins/.ssh/id_rsa'
+    }
+
     stages {
         stage('Test') {
             steps {
@@ -21,19 +27,19 @@ pipeline {
 
         stage('Add SSH Fingerprint') {
             steps {
-                sh 'mkdir -p ~/.ssh && ssh-keyscan -H target >> ~/.ssh/known_hosts'
+                sh 'mkdir -p ~/.ssh && ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts'
             }
         }
 
         stage('Check SSH Access') {
             steps {
-                sh 'ssh -i /var/lib/jenkins/.ssh/id_rsa laborant@target "echo SSH OK"'
+                sh 'ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"'
             }
         }
 
         stage('Deploy') {
             steps {
-                sh 'scp -i /var/lib/jenkins/.ssh/id_rsa main laborant@target:~'
+                sh 'scp -i $SSH_KEY main $DEPLOY_USER@$DEPLOY_HOST:~'
             }
         }
     }
