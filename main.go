@@ -1,27 +1,18 @@
 package main
 
 import (
-    "fmt"
+    "encoding/json"
     "net/http"
 )
 
-type Simple struct {
-    Greeting string
-    Subject  string
-    Host     string
-}
-
-func SimpleFactory(host string) Simple {
-    return Simple{"Hello", "World", host}
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-    simple := SimpleFactory(r.Host)
-    fmt.Fprintf(w, "%v", simple)
+type Message struct {
+    Message string `json:"message"`
 }
 
 func main() {
-    http.HandleFunc("/", handler)
-    fmt.Println("Starting server at http://localhost:8080")
-    http.ListenAndServe(":8080", nil)
+    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        json.NewEncoder(w).Encode(Message{Message: "Hello from myapp!"})
+    })
+    http.ListenAndServe(":80", nil)
 }
+
