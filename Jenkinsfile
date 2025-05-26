@@ -19,9 +19,15 @@ pipeline {
             }
         }
 
+        stage('Check SSH Access') {
+            steps {
+                sh 'ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no laborant@target "echo SSH connection successful"'
+            }
+        }
+
         stage('Deploy') {
             steps {
-                sh 'scp -o StrictHostKeyChecking=no main laborant@target:~'
+                sh 'scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no main laborant@target:~'
             }
         }
     }
