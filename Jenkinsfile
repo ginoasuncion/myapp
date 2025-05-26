@@ -8,7 +8,7 @@ pipeline {
     environment {
         DEPLOY_USER = 'laborant'
         DEPLOY_HOST = '172.16.0.3'
-        SSH_KEY = '/var/lib/jenkins/.ssh/id_rsa'
+        SSH_KEY = '~/.ssh/id_rsa'
     }
 
     stages {
