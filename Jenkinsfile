@@ -15,6 +15,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'go build -o main main.go'
+                sh 'ls -l main' // Check the file exists
             }
         }
 
