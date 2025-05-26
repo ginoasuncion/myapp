@@ -19,15 +19,21 @@ pipeline {
             }
         }
 
+        stage('Add SSH Fingerprint') {
+            steps {
+                sh 'mkdir -p ~/.ssh && ssh-keyscan -H target >> ~/.ssh/known_hosts'
+            }
+        }
+
         stage('Check SSH Access') {
             steps {
-                sh 'ssh -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no laborant@target "echo SSH connection successful"'
+                sh 'ssh -i /var/lib/jenkins/.ssh/id_rsa laborant@target "echo SSH OK"'
             }
         }
 
         stage('Deploy') {
             steps {
-                sh 'scp -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no main laborant@target:~'
+                sh 'scp -i /var/lib/jenkins/.ssh/id_rsa main laborant@target:~'
             }
         }
     }
