@@ -20,7 +20,9 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh 'scp main laborant@target:~'
+                sshagent(['deploy-key']) {
+                    sh 'scp -o StrictHostKeyChecking=no main laborant@target:~'
+                }
             }
         }
     }
