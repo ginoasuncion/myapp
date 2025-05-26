@@ -46,7 +46,7 @@ pipeline {
         stage('Deploy Service File') {
             steps {
                 sh 'scp -i $SSH_KEY main.service $DEPLOY_USER@$DEPLOY_HOST:~/main.service'
-                sh '''
+                sh """
                 ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST <<EOF
                     sudo mv ~/main.service /etc/systemd/system/main.service
                     sudo chmod 644 /etc/systemd/system/main.service
@@ -54,7 +54,7 @@ pipeline {
                     sudo systemctl enable main.service
                     sudo systemctl restart main.service
                 EOF
-                '''
+                """
             }
         }
     }
