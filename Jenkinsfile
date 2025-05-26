@@ -5,12 +5,6 @@ pipeline {
         go "1.24.1"
     }
 
-    environment {
-        DEPLOY_USER = 'laborant'
-        DEPLOY_HOST = '172.16.0.3'
-        SSH_KEY = '/var/lib/jenkins/.ssh/id_rsa'
-    }
-
     stages {
         stage('Test') {
             steps {
@@ -21,42 +15,57 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'go build -o main main.go'
-                sh 'ls -l main'
             }
         }
 
         stage('Add SSH Fingerprint') {
             steps {
-                sh 'mkdir -p ~/.ssh && ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts'
+                withCredentials([
+                    string(credentialsId: 'target-host', variable: 'DEPLOY_HOST')
+                ]) {
+                    sh 'mkdir -p ~/.ssh && ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts'
+                }
             }
         }
 
         stage('Check SSH Access') {
             steps {
-                sh 'ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"'
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'target-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'DEPLOY_USER'),
+                    string(credentialsId: 'target-host', variable: 'DEPLOY_HOST')
+                ]) {
+                    sh 'ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"'
+                }
             }
         }
 
         stage('Deploy Binary') {
             steps {
-                // Upload to a temporary name to avoid overwrite issues
-                sh 'scp -i $SSH_KEY main $DEPLOY_USER@$DEPLOY_HOST:/home/laborant/main.tmp'
-                // Rename on the remote host
-                sh 'ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST "mv /home/laborant/main.tmp /home/laborant/main"'
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'target-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'DEPLOY_USER'),
+                    string(credentialsId: 'target-host', variable: 'DEPLOY_HOST')
+                ]) {
+                    sh 'scp -i $SSH_KEY main $DEPLOY_USER@$DEPLOY_HOST:/home/$DEPLOY_USER/main.tmp'
+                    sh 'ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST "mv /home/$DEPLOY_USER/main.tmp /home/$DEPLOY_USER/main"'
+                }
             }
         }
 
         stage('Deploy Service File') {
             steps {
-                sh 'scp -i $SSH_KEY main.service $DEPLOY_USER@$DEPLOY_HOST:/home/laborant/main.service'
-                sh """
-                    ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST \\
-                    'sudo mv /home/laborant/main.service /etc/systemd/system/main.service && \\
-                     sudo chmod 644 /etc/systemd/system/main.service && \\
-                     sudo systemctl daemon-reload && \\
-                     sudo systemctl enable main.service && \\
-                     sudo systemctl restart main.service'
-                """
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'target-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'DEPLOY_USER'),
+                    string(credentialsId: 'target-host', variable: 'DEPLOY_HOST')
+                ]) {
+                    sh 'scp -i $SSH_KEY main.service $DEPLOY_USER@$DEPLOY_HOST:/home/$DEPLOY_USER/main.service'
+                    sh """
+                        ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST \\
+                        'sudo mv /home/$DEPLOY_USER/main.service /etc/systemd/system/main.service && \\
+                         sudo chmod 644 /etc/systemd/system/main.service && \\
+                         sudo systemctl daemon-reload && \\
+                         sudo systemctl enable --now main.service'
+                    """
+                }
             }
         }
     }
