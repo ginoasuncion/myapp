@@ -15,15 +15,13 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'go build -o main main.go'
-                sh 'ls -l main' // Check the file exists
+                sh 'ls -l main'
             }
         }
 
         stage('Deploy') {
             steps {
-                sshagent(['deploy-key']) {
-                    sh 'scp -o StrictHostKeyChecking=no main laborant@target:~'
-                }
+                sh 'scp -o StrictHostKeyChecking=no main laborant@target:~'
             }
         }
     }
