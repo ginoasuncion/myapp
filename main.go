@@ -19,7 +19,14 @@ func SimpleFactory(host string) Simple {
 func handler(w http.ResponseWriter, r *http.Request) {
     simple := SimpleFactory(r.Host)
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(simple)
+
+    jsonOutput, err := json.Marshal(simple)
+    if err != nil {
+        http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+        return
+    }
+
+    fmt.Fprintln(w, string(jsonOutput))
 }
 
 func main() {
