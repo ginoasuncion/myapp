@@ -8,32 +8,40 @@ pipeline {
     stages {
         stage('Unit Test') {
             steps {
-                sh "go test -v ./..."
+                sh 'go test -v ./...'
             }
         }
 
         stage('Build Binary') {
             steps {
-                sh "go build -o main main.go"
+                sh 'go build -o main main.go'
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                }
             }
         }
 
         stage('Docker Build') {
             steps {
-                sh "docker build -t ttl.sh/myapp:1h ."
+                sh 'docker build -t ginoasuncion/myapp:latest .'
             }
         }
 
         stage('Docker Push') {
             steps {
-                sh "docker push ttl.sh/myapp:1h"
+                sh 'docker push ginoasuncion/myapp:latest'
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
                 withKubeConfig([credentialsId: 'kubernetes-token', serverUrl: 'https://k8s:6443']) {
-                    sh "kubectl apply -f k8s/myapp-deployment.yaml"
+                    sh 'kubectl apply -f k8s/myapp-deployment.yaml'
                 }
             }
         }
