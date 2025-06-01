@@ -6,67 +6,37 @@ pipeline {
     }
 
     stages {
-        stage('Test') {
+        stage('Unit Test') {
             steps {
-                sh 'go test ./...'
+                sh "go test -v ./..."
             }
         }
 
-        stage('Build') {
+        stage('Build Binary') {
             steps {
-                sh 'go build -o main main.go'
+                sh "go build -o main main.go"
             }
         }
 
-        stage('Add SSH Fingerprint') {
+        stage('Docker Build') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'target-host', variable: 'DEPLOY_HOST')
-                ]) {
-                    sh 'mkdir -p ~/.ssh && ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts'
-                }
+                sh "docker build -t ttl.sh/myapp:1h ."
             }
         }
 
-        stage('Check SSH Access') {
+        stage('Docker Push') {
             steps {
-                withCredentials([
-                    sshUserPrivateKey(credentialsId: 'target-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'DEPLOY_USER'),
-                    string(credentialsId: 'target-host', variable: 'DEPLOY_HOST')
-                ]) {
-                    sh 'ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"'
-                }
+                sh "docker push ttl.sh/myapp:1h"
             }
         }
 
-        stage('Deploy Binary') {
+        stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([
-                    sshUserPrivateKey(credentialsId: 'target-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'DEPLOY_USER'),
-                    string(credentialsId: 'target-host', variable: 'DEPLOY_HOST')
-                ]) {
-                    sh 'scp -i $SSH_KEY main $DEPLOY_USER@$DEPLOY_HOST:/home/$DEPLOY_USER/main.tmp'
-                    sh 'ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST "mv /home/$DEPLOY_USER/main.tmp /home/$DEPLOY_USER/main"'
-                }
-            }
-        }
-
-        stage('Deploy Service File') {
-            steps {
-                withCredentials([
-                    sshUserPrivateKey(credentialsId: 'target-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'DEPLOY_USER'),
-                    string(credentialsId: 'target-host', variable: 'DEPLOY_HOST')
-                ]) {
-                    sh 'scp -i $SSH_KEY main.service $DEPLOY_USER@$DEPLOY_HOST:/home/$DEPLOY_USER/main.service'
-                    sh """
-                        ssh -i $SSH_KEY $DEPLOY_USER@$DEPLOY_HOST \\
-                        'sudo mv /home/$DEPLOY_USER/main.service /etc/systemd/system/main.service && \\
-                         sudo chmod 644 /etc/systemd/system/main.service && \\
-                         sudo systemctl daemon-reload && \\
-                         sudo systemctl enable --now main.service'
-                    """
+                withKubeConfig([credentialsId: 'kubernetes-token', serverUrl: 'https://k8s:6443']) {
+                    sh "kubectl apply -f k8s/myapp-deployment.yaml"
                 }
             }
         }
     }
 }
+
