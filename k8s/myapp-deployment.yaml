@@ -1,0 +1,7 @@
+spec:
+  containers:
+  - name: myapp
+    image: ttl.sh/myapp:1h
+    ports:
+    - containerPort: 4444
+
