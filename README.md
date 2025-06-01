@@ -1,50 +1,40 @@
-# myapp
+# MyApp - Kubernetes Deployment with Jenkins
 
-A simple Go web app that returns a JSON response. Built with Docker and deployed via Docker Hub.
+This project is a simple Go application deployed to a Kubernetes cluster using a Jenkins pipeline.
 
-## 🛠 Tech
+## Project Overview
 
-- Go 1.22
-- Docker (multi-stage build)
-- Docker Hub: [ginoasuncion/myapp](https://hub.docker.com/r/ginoasuncion/myapp)
+- Language: Go
+- Containerized with Docker
+- CI/CD pipeline via Jenkins
+- Deployed to Kubernetes using `kubectl`
 
-## 🚀 Build & Run (Locally)
+## Pipeline Stages
+
+1. **Test** – Runs unit tests
+2. **Build** – Builds Go binary
+3. **Docker Build** – Builds Docker image
+4. **Docker Push** – Pushes image to Docker Hub
+5. **Deploy to Kubernetes** – Applies deployment YAML via `kubectl`
+
+## Prerequisites
+
+- Jenkins configured with:
+  - Go and Docker
+  - DockerHub credentials (`dockerhub-creds`)
+  - Kubernetes token credentials (`kubernetes-token`)
+- Kubernetes cluster with access at `https://k8s:6443`
+
+## Deployment Steps
+
+1. **Docker Image**:  
+   Pushed as `ginoasuncion/myapp:latest`
+
+2. **Kubernetes YAML**:  
+   Deployment defined in `myapp-deployment.yaml`
+
+3. **Apply Deployment**:
 
 ```bash
-# Build Docker image
-docker build -t ginoasuncion/myapp .
-
-# Run locally
-docker run --rm -p 4444:4444 ginoasuncion/myapp
-
-# Test
-curl http://localhost:4444
-```
-
-## ☁️ Deploy to Docker VM
-
-```bash
-docker pull ginoasuncion/myapp
-docker run -d --rm -p 4444:4444 ginoasuncion/myapp
-curl http://<docker-vm-ip>:4444
-```
-
-## 📄 Response
-
-```json
-{
-  "greeting": "Hello",
-  "subject": "World",
-  "host": "localhost:4444"
-}
-```
-
-## 📁 Structure
-
-```
-main.go          # Go server
-main_test.go     # Test
-Dockerfile       # Multi-stage build
-README.md        # This file
-```
+kubectl apply -f myapp-deployment.yaml
 
