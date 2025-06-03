@@ -4,6 +4,7 @@ pipeline {
     environment {
         GO_VERSION = '1.24.1'
         DOCKER_IMAGE = 'ginoasuncion/myapp:latest'
+        EC2_IP = '3.79.245.226'
     }
 
     stages {
@@ -59,10 +60,19 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy to EC2') {
             steps {
-                withKubeConfig([credentialsId: 'kubernetes-token', serverUrl: 'https://k8s:6443']) {
-                    sh 'kubectl apply -f myapp-deployment.yaml'
+                sshagent (credentials: ['ec2-deploy-key']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ec2-user@$EC2_IP <<EOF
+                      sudo yum install -y docker
+                      sudo systemctl start docker
+                      sudo docker pull $DOCKER_IMAGE
+                      sudo docker stop myapp || true
+                      sudo docker rm myapp || true
+                      sudo docker run -d --name myapp -p 4444:8080 $DOCKER_IMAGE
+                    EOF
+                    '''
                 }
             }
         }
