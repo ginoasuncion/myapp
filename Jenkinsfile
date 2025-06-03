@@ -4,7 +4,9 @@ pipeline {
     environment {
         GO_VERSION = '1.24.1'
         DOCKER_IMAGE = 'ginoasuncion/myapp:latest'
-        EC2_IP = '3.79.245.226'
+        EC2_USER = 'ec2-user'
+        EC2_HOST = '3.79.245.226'
+        DEPLOY_KEY_ID = 'ec2-deploy-key'
     }
 
     stages {
@@ -32,7 +34,8 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'go build -o main main.go'
+                // Build a static Linux-compatible binary
+                sh 'GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o main main.go'
             }
         }
 
@@ -63,25 +66,13 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 withCredentials([sshUserPrivateKey(
-                    credentialsId: 'ec2-deploy-key',
-                    keyFileVariable: 'KEY_FILE',
+                    credentialsId: "${DEPLOY_KEY_ID}",
+                    keyFileVariable: 'SSH_KEY',
                     usernameVariable: 'SSH_USER'
                 )]) {
                     sh '''
-                        chmod 600 $KEY_FILE
-
-                        # Copy binary and service file
-                        scp -o StrictHostKeyChecking=no -i $KEY_FILE main $SSH_USER@$EC2_IP:/home/ec2-user/
-                        scp -o StrictHostKeyChecking=no -i $KEY_FILE main.service $SSH_USER@$EC2_IP:/tmp/
-
-                        # Install and start service
-                        ssh -o StrictHostKeyChecking=no -i $KEY_FILE $SSH_USER@$EC2_IP '
-                            sudo mv /tmp/main.service /etc/systemd/system/main.service &&
-                            sudo chmod +x /home/ec2-user/main &&
-                            sudo systemctl daemon-reexec &&
-                            sudo systemctl daemon-reload &&
-                            sudo systemctl restart main.service
-                        '
+                        scp -i $SSH_KEY -o StrictHostKeyChecking=no main $SSH_USER@$EC2_HOST:/home/ec2-user/main
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@$EC2_HOST 'sudo systemctl restart main.service && sudo systemctl status main.service'
                     '''
                 }
             }
