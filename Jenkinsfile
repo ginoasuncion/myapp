@@ -62,20 +62,23 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                sshagent (credentials: ['ec2-deploy-key']) {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'ec2-deploy-key',
+                    keyFileVariable: 'KEY_FILE',
+                    usernameVariable: 'SSH_USER'
+                )]) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no ec2-user@$EC2_IP <<EOF
-                      sudo yum install -y docker
-                      sudo systemctl start docker
-                      sudo docker pull $DOCKER_IMAGE
-                      sudo docker stop myapp || true
-                      sudo docker rm myapp || true
-                      sudo docker run -d --name myapp -p 4444:8080 $DOCKER_IMAGE
-                    EOF
+                        chmod 600 $KEY_FILE
+                        scp -o StrictHostKeyChecking=no -i $KEY_FILE main.service $SSH_USER@$EC2_IP:/tmp/
+                        ssh -o StrictHostKeyChecking=no -i $KEY_FILE $SSH_USER@$EC2_IP '
+                            sudo mv /tmp/main.service /etc/systemd/system/main.service &&
+                            sudo systemctl daemon-reexec &&
+                            sudo systemctl daemon-reload &&
+                            sudo systemctl restart main.service
+                        '
                     '''
                 }
             }
         }
     }
 }
-
