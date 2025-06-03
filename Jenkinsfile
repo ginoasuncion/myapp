@@ -69,9 +69,15 @@ pipeline {
                 )]) {
                     sh '''
                         chmod 600 $KEY_FILE
+
+                        # Copy binary and service file
+                        scp -o StrictHostKeyChecking=no -i $KEY_FILE main $SSH_USER@$EC2_IP:/home/ec2-user/
                         scp -o StrictHostKeyChecking=no -i $KEY_FILE main.service $SSH_USER@$EC2_IP:/tmp/
+
+                        # Install and start service
                         ssh -o StrictHostKeyChecking=no -i $KEY_FILE $SSH_USER@$EC2_IP '
                             sudo mv /tmp/main.service /etc/systemd/system/main.service &&
+                            sudo chmod +x /home/ec2-user/main &&
                             sudo systemctl daemon-reexec &&
                             sudo systemctl daemon-reload &&
                             sudo systemctl restart main.service

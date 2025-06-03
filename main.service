@@ -1,11 +1,12 @@
 [Unit]
-Description=My Go App
+Description=Go Application Service
 After=network.target
 
 [Service]
-ExecStart=/home/laborant/main
+ExecStart=/home/ec2-user/main
 Restart=always
-User=laborant
+User=ec2-user
+Environment=PORT=4444
 
 [Install]
 WantedBy=multi-user.target
