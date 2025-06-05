@@ -1,0 +1,22 @@
+- hosts: all
+  tasks:
+    - name: Copy the artifact
+      copy:
+        src: main
+        dest: /home/laborant/main
+        mode: '0755'
+
+    - name: Copy the systemd unit file
+      become: true
+      copy:
+        src: main.service
+        dest: /etc/systemd/system/main.service
+        mode: '0644'
+
+    - name: Start the service
+      become: true
+      ansible.builtin.systemd:
+        name: main.service
+        daemon_reload: true
+        state: started
+

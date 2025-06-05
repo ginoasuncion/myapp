@@ -1,0 +1,12 @@
+[Unit]
+Description=Main App Service
+After=network.target
+
+[Service]
+ExecStart=/home/laborant/main
+Restart=always
+User=laborant
+
+[Install]
+WantedBy=multi-user.target
+
