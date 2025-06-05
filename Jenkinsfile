@@ -4,7 +4,7 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        sh '[ -f main ] && chmod +x main'
+        sh 'go build -o main main.go'
       }
     }
 
