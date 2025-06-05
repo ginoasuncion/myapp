@@ -10,10 +10,11 @@ pipeline {
 
     stage('Deploy with Ansible') {
       steps {
-        sh '''
-          chmod 600 id_rsa
-          ansible-playbook -i hosts.ini playbook.yml
-        '''
+        withCredentials([sshUserPrivateKey(credentialsId: 'ansible-key', keyFileVariable: 'SSH_KEY')]) {
+          sh '''
+            ansible-playbook -i hosts.ini --private-key $SSH_KEY playbook.yml
+          '''
+        }
       }
     }
   }
