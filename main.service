@@ -1,5 +1,5 @@
 [Unit]
-Description=Main App Service
+Description=Go Web App
 After=network.target
 
 [Service]
