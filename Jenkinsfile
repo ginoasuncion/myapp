@@ -12,7 +12,7 @@ pipeline {
       steps {
         withCredentials([sshUserPrivateKey(credentialsId: 'ansible-key', keyFileVariable: 'SSH_KEY')]) {
           sh '''
-            ansible-playbook -i hosts.ini --private-key $SSH_KEY playbook.yml
+            ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i hosts.ini --private-key $SSH_KEY playbook.yml
           '''
         }
       }
